@@ -130,7 +130,7 @@ dmypy.json
 .pyre/
 
 # custom ignore
-.jpg
-.png
-dataset/**/*.jpg
-.zip
+/**/*.jpg
+/**/*.png
+dataset/**/*.*
+result/**/*.*

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from scipy.signal import gaussian
-from scipy.misc import imread, imsave
+from imageio import imread, imsave
 import torch
 from torch.autograd import Variable
 
@@ -166,7 +166,7 @@ def canny(raw_img, use_cuda=False):
 
 
 if __name__ == '__main__':
-    img = imread('fb_profile.jpg') / 255.0
+    img = imread('./fb_profile.jpg') / 255.0
 
     # canny(img, use_cuda=False)
     canny(img, use_cuda=True)
