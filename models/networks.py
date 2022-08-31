@@ -745,7 +745,7 @@ class GANLoss(nn.Module):
 
 class EdgeLoss(nn.Module):
     def __init__(self, opt):
-        from edge import Net
+        from models.edge import Net
         super(EdgeLoss, self).__init__()
         self.EdgeDetector = Net(std=5.0, threshold=10.0, device=opt.cuda)
         self.L1Loss = nn.L1Loss()

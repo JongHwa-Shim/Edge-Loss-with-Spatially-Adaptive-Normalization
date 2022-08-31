@@ -34,6 +34,16 @@ def img_show(img):
     plt.show()
     return None
 
+def show_hist(tensor, bins=100):
+    from matplotlib import pyplot as plt
+    max = tensor.max()
+    min = tensor.min()
+    tensor = tensor.cpu().detach().flatten().numpy
+    
+    plt.hist(tensor, bins=bins, range=[min,max])
+    plt.show()
+    return None
+
 def modify_commandline_options(opt):
     """
     In case of SPADE Generator

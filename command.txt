@@ -1,0 +1,43 @@
+TRAIN COMMAND
+<default>
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG [GENERATOR] --netD [DISCRIMINATOR] --no_instance [--no_edge_loss]
+
+<SPADE+ & multiscale w edge matching loss>: ours
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spadeplus --netD multiscale --no_instance
+
+<SPADE+ & multiscale w/o edge matching loss>: ablation study of edge loss
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spadeplus --netD multiscale --no_instance --no_edge_loss
+
+<SPADE & multiscale w edge matching loss>: ablation study of SPADE+
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD multiscale --no_instance
+
+<SPADE & Nlayer w edge matching loss>: ablation study of SPADE+ 2
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD n_layers --no_instance
+
+<SPADE & multiscale w/o edge matching loss>: ablation study of SPADE+ and edge loss
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD multiscale --no_instance --no_edge_loss
+
+<SPADE & multiscale w/o edge matching loss>: ablation study of SPADE+ and edge loss 2
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD n_layers --no_instance --no_edge_loss
+
+TEST COMMAND
+<default>
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG [GENERATOR] --netD [DISCRIMINATOR]  --nepochs [EPOCH NUM]
+
+<SPADE+ & multiscale w edge matching loss>: ours
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spadeplus --netD multiscale --nepochs [EPOCH NUM]
+
+<SPADE+ & multiscale w/o edge matching loss>: ablation study of edge loss
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spadeplus --netD multiscale --nepochs [EPOCH NUM] --no_edge_loss
+
+<SPADE & multiscale w edge matching loss>: ablation study of SPADE+
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD multiscale --nepochs [EPOCH NUM]
+
+<SPADE & Nlayer w edge matching loss>: ablation study of SPADE+ 2
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD n_layers --nepochs [EPOCH NUM]
+
+<SPADE & multiscale w/o edge matching loss>: ablation study of SPADE+ and edge loss
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD multiscale --nepochs [EPOCH NUM] --no_edge_loss
+
+<SPADE & multiscale w/o edge matching loss>: ablation study of SPADE+ and edge loss 2
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG spade --netD n_layers --nepochs [EPOCH NUM] --no_edge_loss
