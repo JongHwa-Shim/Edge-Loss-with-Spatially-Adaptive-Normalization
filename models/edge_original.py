@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import numpy as np
@@ -144,7 +145,7 @@ class Net(nn.Module):
 
         return blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold
 
-def canny(raw_img, use_cuda=False):
+def canny(raw_img, img_name, use_cuda=False):
     img = torch.from_numpy(raw_img.transpose((2, 0, 1)))
     batch = torch.stack([img]).float()
 
@@ -159,14 +160,18 @@ def canny(raw_img, use_cuda=False):
 
     blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = net(data)
 
-    imsave('./result/gradient_magnitude.png',grad_mag.data.cpu().numpy()[0,0])
-    imsave('./result/thin_edges.png', thresholded.data.cpu().numpy()[0, 0])
-    imsave('./result/final.png', (thresholded.data.cpu().numpy()[0, 0] > 0.0).astype(float))
-    imsave('./result/thresholded.png', early_threshold.data.cpu().numpy()[0, 0])
+    result_dir = './result'
+    imsave(os.path.join(result_dir, img_name+'gradient_magnitude.png'), grad_mag.data.cpu().numpy()[0,0])
+    imsave(os.path.join(result_dir, img_name+'thin_edges.png'), thresholded.data.cpu().numpy()[0, 0])
+    imsave(os.path.join(result_dir, img_name+'final.png'), (thresholded.data.cpu().numpy()[0, 0] > 0.0).astype(float))
+    imsave(os.path.join(result_dir, img_name+'threshold.png'), early_threshold.data.cpu().numpy()[0, 0])
 
 
 if __name__ == '__main__':
-    img = imread('./fb_profile.jpg') / 255.0
+    img_dir = './sample'
+    img_file = 'fb_profile.jpg'
+    img_name = img_file.split('.')[0]
+    img = imread(os.path.join(img_dir, img_file)) / 255.0
 
     # canny(img, use_cuda=False)
-    canny(img, use_cuda=True)
+    canny(img, img_name, use_cuda=True)

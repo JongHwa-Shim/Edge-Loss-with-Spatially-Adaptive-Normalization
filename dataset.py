@@ -11,7 +11,7 @@ from utils import is_image_file, load_img
 
 
 class DatasetFromFolder(data.Dataset):
-    def __init__(self, image_dir, direction):
+    def __init__(self, image_dir, direction, opt):
         super(DatasetFromFolder, self).__init__()
         self.direction = direction
         self.a_path = join(image_dir, "a")
@@ -23,18 +23,23 @@ class DatasetFromFolder(data.Dataset):
 
         self.transform = transforms.Compose(transform_list)
 
+        self.opt = opt
+
     def __getitem__(self, index):
         a = Image.open(join(self.a_path, self.image_filenames[index])).convert('RGB')
         b = Image.open(join(self.b_path, self.image_filenames[index])).convert('RGB')
-        a = a.resize((286, 286), Image.BICUBIC)
-        b = b.resize((286, 286), Image.BICUBIC)
+        a = a.resize((self.opt.img_width, self.opt.img_height), Image.BICUBIC)
+        b = b.resize((self.opt.img_width, self.opt.img_height), Image.BICUBIC)
         a = transforms.ToTensor()(a)
         b = transforms.ToTensor()(b)
-        w_offset = random.randint(0, max(0, 286 - 256 - 1))
-        h_offset = random.randint(0, max(0, 286 - 256 - 1))
+
+        # random crop augmentation
+        w_offset = random.randint(0, max(0, self.opt.img_width - self.opt.crop_size_width - 1))
+        h_offset = random.randint(0, max(0, self.opt.img_height - self.opt.crop_size_height - 1))
+        offset = random.randint(0, max(0, self.opt.img_height - self.opt.crop_size_height - 1))
     
-        a = a[:, h_offset:h_offset + 256, w_offset:w_offset + 256]
-        b = b[:, h_offset:h_offset + 256, w_offset:w_offset + 256]
+        a = a[:, h_offset:h_offset + self.opt.crop_size_height, w_offset:w_offset + self.opt.crop_size_width]
+        b = b[:, h_offset:h_offset + self.opt.crop_size_height, w_offset:w_offset + self.opt.crop_size_width]
     
         a = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(a)
         b = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(b)
