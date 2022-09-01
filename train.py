@@ -55,6 +55,7 @@ parser.add_argument('--label_nc', type=int, default=3, help='discriminator input
 parser.add_argument('--contain_dontcare_label', action='store_true', help='is there dont care label segmap in D input? if true, discriminator input dimension 1++')
 parser.add_argument('--no_instance', action='store_true', help='is there no instance segmap in D input? if true, discriminator input dimension 1++')
 parser.add_argument('--load_checkpoint', type=str, default=None, help=r'load model with "checkpoint/{--dataset}/netX_{--netG|--netD}_epoch_{--load_checkpoint}"')
+parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
 opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss'.split())
 opt = modify_commandline_options(opt)
 print(opt)
@@ -172,7 +173,7 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
     if epoch % 5 == 0:
         if not os.path.exists("checkpoint"):
             os.mkdir("checkpoint")
-        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss))))
+        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         net_g_model_out_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.netG, epoch))

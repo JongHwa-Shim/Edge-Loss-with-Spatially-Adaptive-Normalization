@@ -40,7 +40,8 @@ class DatasetFromFolder(data.Dataset):
     
         a = a[:, h_offset:h_offset + self.opt.crop_size_height, w_offset:w_offset + self.opt.crop_size_width]
         b = b[:, h_offset:h_offset + self.opt.crop_size_height, w_offset:w_offset + self.opt.crop_size_width]
-    
+
+        # -1~1 image scaling
         a = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(a)
         b = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(b)
 

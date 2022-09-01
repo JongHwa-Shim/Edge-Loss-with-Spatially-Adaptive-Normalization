@@ -18,12 +18,13 @@ parser.add_argument('--cuda', type=str, default='cuda:0', help='(cuda:n|cpu')
 parser.add_argument('--netG', type=str, default='spade', help='selects model to use for netG (pix2pix|pix2pixhd|spade|spadeplus)')
 parser.add_argument('--netD', type=str, default='multiscale', help='(n_layers|multiscale)')
 parser.add_argument('--no_edge_loss', action='store_true', help='if specified, edge loss will not apllied')
-opt = parser.parse_args('--dataset facades --cuda cpu --netG spadeplus --netD multiscale --nepochs 20 --no_edge_loss'.split())
+parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
+opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spade --netD multiscale --nepochs 70 --no_edge_loss'.split())
 print(opt)
 
 device = torch.device(opt.cuda)
 
-checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss))))
+checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
 model_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.netG, opt.nepochs))
 # model_path = "checkpoint/{}/netG_{}_epoch_{}.pth".format(opt.dataset, opt.netG, opt.nepochs) # will be deprecated
 
@@ -48,7 +49,7 @@ for image_name in image_filenames:
     out = net_g(input)
     out_img = out.detach().squeeze(0).cpu()
 
-    save_dir = os.path.join('result', opt.dataset, 'netG={},netD={}, edgeloss={}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss))), str(opt.nepochs))
+    save_dir = os.path.join('result', opt.dataset, 'netG={},netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss))), str(opt.nepochs), opt.memo)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_img(out_img, "{}/{}".format(save_dir, image_name))
