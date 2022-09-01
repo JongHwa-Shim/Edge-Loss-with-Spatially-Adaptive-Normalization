@@ -748,7 +748,7 @@ class EdgeLoss(nn.Module):
         from models.edge import Net
         super(EdgeLoss, self).__init__()
         self.EdgeDetector = Net(std=5.0, threshold=10.0, device=opt.cuda)
-        self.L1Loss = nn.L1Loss()
+        self.L1Loss = nn.L1Loss(reduction='mean')
 
     def forward(self, fake_img, real_img):
         fake_edge = self.EdgeDetector(fake_img)

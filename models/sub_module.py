@@ -193,8 +193,8 @@ class SPADEPlus(nn.Module):
             nn.LeakyReLU(),
             nn.Conv2d(2*norm_nc, 2*norm_nc, kernel_size=1, padding=0)
         )
-        
-        self.mlp_gamma_beta = nn.Sequential(
+
+        self.mlp_spade_gamma_beta = nn.Sequential(
             nn.Conv2d(nhidden, 2*norm_nc, kernel_size=ks, padding=pw),
             nn.LeakyReLU(),
             nn.Conv2d(2*norm_nc, 2*norm_nc, kernel_size=ks, padding=pw),
@@ -219,7 +219,7 @@ class SPADEPlus(nn.Module):
         adain_normalized = F.leaky_relu(normalized * (1 + adain_gamma) + adain_beta)
         
         # Part 2.2 apply SPADE, scale and shift pixel-wise(spatial) feature
-        spade_gamma_beta = self.mlp_adain_gamma_beta(actv) # (N, 2C, H, W)
+        spade_gamma_beta = self.mlp_spade_gamma_beta(actv) # (N, 2C, H, W)
         spade_gamma, spade_beta = torch.chunk(spade_gamma_beta, 2, dim=1) # (N, C, H, W) x2
         spade_normalized = adain_normalized * (1 + spade_gamma) + spade_beta
 
