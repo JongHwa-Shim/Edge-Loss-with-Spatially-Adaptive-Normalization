@@ -1,6 +1,6 @@
 TRAIN COMMAND
 <default>
---dataset [DATASET NAME] --cuda [CUDA NUM] --netG [GENERATOR] --netD [DISCRIMINATOR] --no_instance [--no_edge_loss]
+--dataset [DATASET NAME] --cuda [CUDA NUM] --netG [GENERATOR] --netD [DISCRIMINATOR] --no_instance [--no_edge_loss] --memo [ADDITIONAL MEMO]
 
 <SPADE+ & multiscale w edge matching loss>: ours
 --dataset [DATASET NAME] --cuda [CUDA NUM] --netG spadeplus --netD multiscale --no_instance

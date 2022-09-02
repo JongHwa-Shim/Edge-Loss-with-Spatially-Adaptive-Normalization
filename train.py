@@ -173,7 +173,7 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
     if epoch % 5 == 0:
         if not os.path.exists("checkpoint"):
             os.mkdir("checkpoint")
-        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
+        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         net_g_model_out_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.netG, epoch))

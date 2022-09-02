@@ -19,7 +19,7 @@ parser.add_argument('--netG', type=str, default='spade', help='selects model to 
 parser.add_argument('--netD', type=str, default='multiscale', help='(n_layers|multiscale)')
 parser.add_argument('--no_edge_loss', action='store_true', help='if specified, edge loss will not apllied')
 parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
-opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spade --netD multiscale --nepochs 70 --no_edge_loss'.split())
+opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --nepochs 400 --no_edge_loss'.split())
 print(opt)
 
 device = torch.device(opt.cuda)
@@ -49,7 +49,7 @@ for image_name in image_filenames:
     out = net_g(input)
     out_img = out.detach().squeeze(0).cpu()
 
-    save_dir = os.path.join('result', opt.dataset, 'netG={},netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss))), str(opt.nepochs), opt.memo)
+    save_dir = os.path.join('result', opt.dataset, 'netG={},netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo), str(opt.nepochs))
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_img(out_img, "{}/{}".format(save_dir, image_name))
