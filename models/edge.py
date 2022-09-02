@@ -10,15 +10,16 @@ from imageio import imread, imsave
 import torch
 from torch.autograd import Variable
 
-from utils import img_show
+from utils import img_show, show_hist
 
 torch.autograd.set_detect_anomaly(True)
 
 class Net(nn.Module):
-    def __init__(self, std=5.0, threshold=10.0, device='cpu'):
+    def __init__(self, std=1.0, lower_threshold=6.0, upper_threshold=50.0, device='cpu'):
         super(Net, self).__init__()
 
-        self.threshold = threshold
+        self.lower_threshold = lower_threshold
+        self.upper_threshold = upper_threshold
         self.device = device
 
         filter_size = 5
@@ -155,7 +156,7 @@ class Net(nn.Module):
 
         # THRESHOLD
         thresholded = thin_edges
-        thresholded[thin_edges<self.threshold] = 0.0
+        thresholded[thin_edges<self.lower_threshold or thin_edges>self.upper_threshold] = 0.0
         
         # do not need
         """
@@ -171,7 +172,7 @@ def canny(raw_img, img_name, device):
     img = torch.from_numpy(raw_img.transpose((2, 0, 1)))
     batch = torch.stack([img]).float()
 
-    net = Net(std=5.0, threshold=10.0, device=device).to(device)
+    net = Net(std=1.0, lower_threshold=6.0, upper_threshold=50.0, device=device).to(device)
     net.eval()
 
     data = Variable(batch).to(device)
@@ -180,10 +181,10 @@ def canny(raw_img, img_name, device):
 
     optimizer = torch.optim.SGD([data], lr=0.001, momentum=0.9)
 
-    x = imread('./sample/real_cmp_b0200.png')/255.0
+    x = imread('./sample/seg_map.jpg')/255.0
     x = torch.from_numpy(x.transpose((2,0,1)))
     x = torch.stack([x]).float().to(device)
-    x = torch.nn.functional.interpolate(x, (256,256))
+    x = torch.nn.functional.interpolate(x, (600,600))
     x_ = net(x).clone().detach()
     L1Loss = nn.L1Loss()
 
@@ -191,7 +192,7 @@ def canny(raw_img, img_name, device):
 
         thresholded = net(data)
         # loss = -torch.mean(thresholded)
-        loss = 1000 * L1Loss(thresholded, x_)
+        loss = 10000 * L1Loss(thresholded, x_)
         optimizer.zero_grad()
         loss.backward()
         print(loss.data)
@@ -213,7 +214,7 @@ def canny(raw_img, img_name, device):
 
 if __name__ == '__main__':
     img_dir = './sample'
-    img_file = 'fake_cmp_b0200.png'
+    img_file = 'cmp_b0005.png'
     img_name = img_file.split('.')[0]
     img = imread(os.path.join(img_dir, img_file)) / 255.0
 

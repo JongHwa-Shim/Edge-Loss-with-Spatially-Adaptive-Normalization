@@ -36,9 +36,9 @@ def img_show(img):
 
 def show_hist(tensor, bins=100):
     from matplotlib import pyplot as plt
-    max = tensor.max()
-    min = tensor.min()
-    tensor = tensor.cpu().detach().flatten().numpy
+    max = tensor.max().item()
+    min = tensor.min().item()
+    tensor = tensor.cpu().detach().flatten().numpy()
     
     plt.hist(tensor, bins=bins, range=[min,max])
     plt.show()
