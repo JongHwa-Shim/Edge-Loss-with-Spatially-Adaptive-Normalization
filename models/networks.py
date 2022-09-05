@@ -748,16 +748,18 @@ class EdgeLoss(nn.Module):
         from models.edge import Net
         super(EdgeLoss, self).__init__()
         self.EdgeDetector = Net(std=1.0, lower_threshold=opt.lower_threshold, upper_threshold=opt.upper_threshold, device=opt.cuda)
-        self.L1Loss = nn.L1Loss(reduction='mean')
+        self.L1Loss = nn.L1Loss(reduction='none')
 
     def forward(self, fake_img, real_img):
-        fake_edge = self.EdgeDetector(fake_img)
         with torch.no_grad():
             real_edge = self.EdgeDetector(real_img)
+            edge_real_img = real_img * real_edge
         
-        edge_matching_loss = self.L1Loss(fake_edge, real_edge)
+        edge_fake_img = fake_img * real_edge
+
+        edge_loss = self.L1Loss(edge_fake_img, edge_real_img)
         
-        return edge_matching_loss
+        return edge_loss
 
 # generator feature matching loss
 class FeatLoss(nn.Module):

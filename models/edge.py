@@ -158,6 +158,8 @@ class Net(nn.Module):
         thresholded = thin_edges
         thresholded[thin_edges<self.lower_threshold] = 0.0
         thresholded[thin_edges>self.upper_threshold] = 0.0
+
+        thresholded[thresholded > 0.0] = 1.0
         
         # do not need
         """
