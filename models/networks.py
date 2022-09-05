@@ -748,7 +748,7 @@ class EdgeLoss(nn.Module):
         from models.edge import Net
         super(EdgeLoss, self).__init__()
         self.EdgeDetector = Net(std=1.0, lower_threshold=opt.lower_threshold, upper_threshold=opt.upper_threshold, device=opt.cuda)
-        self.L1Loss = nn.L1Loss(reduction='none')
+        self.L1Loss = nn.L1Loss()
 
     def forward(self, fake_img, real_img):
         with torch.no_grad():
