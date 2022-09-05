@@ -135,4 +135,5 @@ dmypy.json
 dataset/**/*.*
 result/**/*.*
 sample/**/*.*
+/**/*.zip
 /**/*.pth

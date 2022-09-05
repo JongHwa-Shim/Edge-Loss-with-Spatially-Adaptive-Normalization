@@ -58,7 +58,7 @@ parser.add_argument('--load_checkpoint', type=str, default=None, help=r'load mod
 parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
 parser.add_argument('--lower_threshold', type=float, default=10.0, help='lower bound threshold of edge detection')
 parser.add_argument('--upper_threshold', type=float, default=50.0, help='upper bound threshold of edge detection')
-opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss'.split())
+opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss --memo one_more_try'.split())
 opt = modify_commandline_options(opt)
 print(opt)
 
@@ -87,7 +87,8 @@ net_d = define_D(opt.label_nc + opt.output_nc, opt.ndf, opt.netD, gpu_id=device,
 criterionGAN = GANLoss().to(device)
 #criterionL1 = nn.L1Loss().to(device)
 criterionL1 = VGGLoss().to(device)
-criterionFeat = FeatLoss(opt).to(device)
+if not opt.no_ganFeat_loss:
+    criterionFeat = FeatLoss(opt).to(device)
 criterionMSE = nn.MSELoss().to(device) # only for validation
 if not opt.no_edge_loss:
     criterionEdge = EdgeLoss(opt).to(device)
@@ -140,12 +141,17 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
         loss_g_gan = criterionGAN(pred_fake, True)
 
         # Second, feature matching loss and L1 loss
-        loss_g_feat = criterionFeat(pred_fake, pred_real) * opt.lamb_feat
+        
         loss_g_l1 = criterionL1(fake_b, real_b) * opt.lamb_l1
 
-        loss_g = loss_g_gan + loss_g_l1 + loss_g_feat
+        loss_g = loss_g_gan + loss_g_l1
 
-        # Third, Edge matching loss
+        # Thired, Feature Matching Loss
+        if not opt.no_ganFeat_loss:
+            loss_g_feat = criterionFeat(pred_fake, pred_real) * opt.lamb_feat
+            loss_g = loss_g + loss_g_feat
+
+        # Fourth, Edge matching loss
         if not opt.no_edge_loss:
             loss_g_edge = criterionEdge(fake_b, real_b) * opt.lambda_edge
             loss_g = loss_g + loss_g_edge
@@ -172,7 +178,7 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
     print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
 
     #checkpoint
-    if epoch % 5 == 0:
+    if epoch % 1 == 0:
         if not os.path.exists("checkpoint"):
             os.mkdir("checkpoint")
         checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))

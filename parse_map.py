@@ -27,8 +27,8 @@ def parse_folder(data_dir):
 
         
 if __name__ == '__main__':
-    save_dir = './dataset/map/test'
+    save_dir = './dataset/cityscape/test'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    data_dir = './dataset/unprocessed/maps/val'
+    data_dir = './dataset/unprocessed/cityscape/val'
     parse_folder(data_dir)
