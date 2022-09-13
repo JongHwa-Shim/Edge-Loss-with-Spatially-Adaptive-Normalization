@@ -160,6 +160,9 @@ class Net(nn.Module):
         thresholded[thin_edges>self.upper_threshold] = 0.0
 
         thresholded[thresholded > 0.0] = 1.0
+        thresholded[thresholded==1.0] = 2.0
+        thresholded[thresholded==0.0] = 1.0
+        thresholded[thresholded==2.0] = 0.0
         
         # do not need
         """
@@ -171,55 +174,30 @@ class Net(nn.Module):
         # return blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold
         return thresholded
 
-def canny(raw_img, img_name, device):
+def canny(raw_img, result_dir, device):
     img = torch.from_numpy(raw_img.transpose((2, 0, 1)))
     batch = torch.stack([img]).float()
 
-    net = Net(std=1.0, lower_threshold=6.0, upper_threshold=50.0, device=device).to(device)
+    net = Net(std=1.0, lower_threshold=10.0, upper_threshold=100.0, device=device).to(device)
     net.eval()
 
     data = Variable(batch).to(device)
+    data = data*2 - 1 
+    thresholded = net(data)
 
-    data.requires_grad = True
 
-    optimizer = torch.optim.SGD([data], lr=0.001, momentum=0.9)
-
-    x = imread('./sample/seg_map.jpg')/255.0
-    x = torch.from_numpy(x.transpose((2,0,1)))
-    x = torch.stack([x]).float().to(device)
-    x = torch.nn.functional.interpolate(x, (600,600))
-    x_ = net(x).clone().detach()
-    L1Loss = nn.L1Loss()
-
-    for i in range(1000):
-
-        thresholded = net(data)
-        # loss = -torch.mean(thresholded)
-        loss = 10000 * L1Loss(thresholded, x_)
-        optimizer.zero_grad()
-        loss.backward()
-        print(loss.data)
-        optimizer.step()
-        if i%100 == 0:
-            # if img -1 ~ 1
-            # a = (data.clone().detach()+ 1) / 2 
-            # if img 0 ~ 1
-            img_show(data)
-    
-    blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = net(data)
-
-    result_dir = './result'
-    imsave(os.path.join(result_dir, img_name+'gradient_magnitude.png'), grad_mag.data.cpu().numpy()[0,0])
-    imsave(os.path.join(result_dir, img_name+'thin_edges.png'), thresholded.data.cpu().numpy()[0, 0])
-    imsave(os.path.join(result_dir, img_name+'final.png'), (thresholded.data.cpu().numpy()[0, 0] > 0.0).astype(float))
-    imsave(os.path.join(result_dir, img_name+'threshold.png'), early_threshold.data.cpu().numpy()[0, 0])
+    imsave(os.path.join(result_dir, img_file), thresholded.data.cpu().numpy()[0, 0])
+    # imsave(os.path.join(result_dir, img_name+'gradient_magnitude.png'), grad_mag.data.cpu().numpy()[0,0])
+    # imsave(os.path.join(result_dir, img_name+'thin_edges.png'), thresholded.data.cpu().numpy()[0, 0])
+    # imsave(os.path.join(result_dir, img_name+'final.png'), (thresholded.data.cpu().numpy()[0, 0] > 0.0).astype(float))
+    # imsave(os.path.join(result_dir, img_name+'threshold.png'), early_threshold.data.cpu().numpy()[0, 0])
 
 
 if __name__ == '__main__':
-    img_dir = './sample'
-    img_file = 'cmp_b0005.png'
-    img_name = img_file.split('.')[0]
-    img = imread(os.path.join(img_dir, img_file)) / 255.0
+    img_dir = r'E:\dataset\anime\test\a'
+    result_dir = r'E:\dataset\anime\test\b'
+    for img_file in os.listdir(img_dir):
+        img = imread(os.path.join(img_dir, img_file)) / 255.0
 
-    # canny(img, use_cuda=False)
-    canny(img, img_name, device='cuda:0')
+        # canny(img, use_cuda=False)
+        canny(img, result_dir=result_dir, device='cuda:0')

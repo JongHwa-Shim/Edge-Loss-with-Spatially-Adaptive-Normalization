@@ -442,7 +442,9 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_id='cuda:0'):
 
 def define_G(input_nc, output_nc, ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_id='cuda:0', opt=None):
     if opt.load_checkpoint is not None:
-        netG_path = './checkpoint/{}/netG_{}_epoch_{}.pth'.format(opt.dataset, opt.netG, opt.load_checkpoint)
+        import os
+        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
+        netG_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.dataset, opt.netG, opt.load_checkpoint))
         net = torch.load(netG_path).to(gpu_id)
         return net
 
@@ -614,7 +616,9 @@ class Outconv(nn.Module):
 def define_D(input_nc, ndf, netD,
             n_layers_D=3, norm='batch', use_sigmoid=False, init_type='normal', init_gain=0.02, gpu_id='cuda:0', opt=None):
     if opt.load_checkpoint is not None:
-        netD_path = './checkpoint/{}/netD_{}_epoch_{}.pth'.format(opt.dataset, opt.netD, opt.load_checkpoint)
+        import os
+        checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
+        netD_path = os.path.join(checkpoint_dir, 'netD_{}_epoch_{}.pth'.format(opt.dataset, opt.netD, opt.load_checkpoint))
         net = torch.load(netD_path).to(gpu_id)
         return net
         
