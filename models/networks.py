@@ -715,7 +715,7 @@ def define_D(input_nc, ndf, netD,
     if opt.load_checkpoint is not None:
         import os
         checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
-        netD_path = os.path.join(checkpoint_dir, 'netD_{}_epoch_{}.pth'.format(opt.dataset, opt.netD, opt.load_checkpoint))
+        netD_path = os.path.join(checkpoint_dir, 'netD_{}_epoch_{}.pth'.format(opt.netD, opt.load_checkpoint))
         net = torch.load(netD_path).to(gpu_id)
         return net
         
