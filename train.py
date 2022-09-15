@@ -35,14 +35,14 @@ parser.add_argument('--cuda', type=str, default='cuda:0', help='(cuda:n|cpu')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
 parser.add_argument('--lamb_l1', type=int, default=10, help='weight on L1 term in objective')
-
+            
 # add new
 parser.add_argument('--img_width', type=int, default=286, help='image width after resize (not final size)')
 parser.add_argument('--img_height', type=int, default=286, help='image height after resize (not final size)')
 parser.add_argument('--crop_size_width', type=int, default=256, help='final image width, Crop to the width of crop_size (after initially scaling the images to load_size.)')
 parser.add_argument('--crop_size_height', type=int, default=256, help='final image height, Crop to the height of crop_size (after initially scaling the images to load_size.)')
 
-parser.add_argument('--netG', type=str, default='spade', help='selects model to use for netG (pix2pix|pix2pixhd|spade|spadeplus)')
+parser.add_argument('--netG', type=str, default='spade', help='selects model to use for netG (pix2pix|pix2pixhd|spade|spadeplus|spadeplustlite)')
 parser.add_argument('--netD', type=str, default='multiscale', help='(n_layers|multiscale)')
 parser.add_argument('--norm_G', type=str, default='spectralinstance', help='instance normalization or batch normalization')
 parser.add_argument('--norm_D', type=str, default='spectralinstance', help='instance normalization or batch normalization')
@@ -58,7 +58,8 @@ parser.add_argument('--load_checkpoint', type=str, default=None, help=r'load mod
 parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
 parser.add_argument('--lower_threshold', type=float, default=10.0, help='lower bound threshold of edge detection')
 parser.add_argument('--upper_threshold', type=float, default=50.0, help='upper bound threshold of edge detection')
-opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss --memo one_more_try'.split())
+parser.add_argument('--save_step', type=int, default=5, help='save step')
+opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss --memo edge=10 --save_step 5'.split())
 opt = modify_commandline_options(opt)
 print(opt)
 
@@ -96,6 +97,13 @@ if not opt.no_edge_loss:
 # setup optimizer
 optimizer_g = optim.Adam(net_g.parameters(), lr=opt.lr_G, betas=(opt.beta1, 0.999))
 optimizer_d = optim.Adam(net_d.parameters(), lr=opt.lr_D, betas=(opt.beta1, 0.999))
+if opt.load_checkpoint is not None:
+    checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
+    optimizer_path = os.path.join(checkpoint_dir, 'opt_epoch_{}.pth'.format(opt.load_checkpoint))
+    opt_checkpoint = torch.load(optimizer_path)
+    optimizer_g.load_state_dict(opt_checkpoint['optimizer_g'])
+    optimizer_d.load_state_dict(opt_checkpoint['optimizer_d'])
+
 net_g_scheduler = get_scheduler(optimizer_g, opt)
 net_d_scheduler = get_scheduler(optimizer_d, opt)
 
@@ -186,6 +194,9 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
             os.makedirs(checkpoint_dir)
         net_g_model_out_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.netG, epoch))
         net_d_model_out_path = os.path.join(checkpoint_dir, 'netD_{}_epoch_{}.pth'.format(opt.netD, epoch))
+        optimizer_out_path = os.path.join(checkpoint_dir, 'opt_epoch_{}.pth'.format(epoch))
         torch.save(net_g, net_g_model_out_path)
         torch.save(net_d, net_d_model_out_path)
+        torch.save({'optimizer_g': optimizer_g.state_dict(),
+                    'optimizer_d': optimizer_d.state_dict()}, optimizer_out_path)
         print("Checkpoint saved to {}".format(checkpoint_dir))

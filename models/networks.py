@@ -4,7 +4,7 @@ from torch.nn import init
 import torch.nn.functional as F
 import functools
 from torch.optim import lr_scheduler
-from models.sub_module import BaseNetwork, SPADEResnetBlock, ResnetBlock, SPADEPlusResnetBlock
+from models.sub_module import BaseNetwork, SPADEResnetBlock, ResnetBlock, SPADEPlusResnetBlock, SPADEPlusLiteResnetBlock
 
 import numpy  as np
 from models.sub_module import get_nonspade_norm_layer
@@ -140,6 +140,100 @@ class SPADEPlusGenerator(BaseNetwork):
 
         if opt.num_upsampling_layers == 'most':
             self.up_4 = SPADEPlusResnetBlock(1 * nf, nf // 2, opt)
+            final_nc = nf // 2
+
+        self.conv_img = nn.Conv2d(final_nc, opt.output_nc, 3, padding=1)
+
+        self.up = nn.Upsample(scale_factor=2)
+
+    def compute_latent_vector_size(self, opt):
+        if opt.num_upsampling_layers == 'normal':
+            num_up_layers = 5
+        elif opt.num_upsampling_layers == 'more':
+            num_up_layers = 6
+        elif opt.num_upsampling_layers == 'most':
+            num_up_layers = 7
+        else:
+            raise ValueError('opt.num_upsampling_layers [%s] not recognized' %
+                             opt.num_upsampling_layers)
+
+        sw = opt.crop_size_width // (2**num_up_layers)
+        sh = opt.crop_size_height // (2**num_up_layers)
+
+        return sw, sh
+
+    def forward(self, input, z=None):
+        seg = input
+
+        # we downsample segmap and run convolution
+        x = F.interpolate(seg, size=(self.sh, self.sw))
+        x = self.fc(x)
+
+        x = self.head_0(x, seg)
+
+        x = self.up(x)
+        x = self.G_middle_0(x, seg)
+
+        if self.opt.num_upsampling_layers == 'more' or \
+           self.opt.num_upsampling_layers == 'most':
+            x = self.up(x)
+
+        x = self.G_middle_1(x, seg)
+
+        x = self.up(x)
+        x = self.up_0(x, seg)
+        x = self.up(x)
+        x = self.up_1(x, seg)
+        x = self.up(x)
+        x = self.up_2(x, seg)
+        x = self.up(x)
+        x = self.up_3(x, seg)
+
+        if self.opt.num_upsampling_layers == 'most':
+            x = self.up(x)
+            x = self.up_4(x, seg)
+
+        x = self.conv_img(F.leaky_relu(x, 2e-1))
+        x = F.tanh(x)
+
+        return x
+
+class SPADEPlusLiteGenerator(BaseNetwork):
+    @staticmethod
+    def modify_commandline_options(parser, is_train):
+        parser.set_defaults(norm_G='spectralspadesyncbatch3x3')
+        parser.add_argument('--num_upsampling_layers',
+                            choices=('normal', 'more', 'most'), default='normal',
+                            help="If 'more', adds upsampling layer between the two middle resnet blocks. If 'most', also add one more upsampling + resnet layer at the end of the generator")
+
+        return parser
+
+    def __init__(self, opt):
+        super().__init__()
+        opt.use_vae = False
+        self.opt = opt
+        nf = opt.ngf
+
+        self.sw, self.sh = self.compute_latent_vector_size(opt)
+
+        # Otherwise, we make the network deterministic by starting with
+        # downsampled segmentation map instead of random z
+        self.fc = nn.Conv2d(self.opt.input_nc, 16 * nf, 3, padding=1)
+
+        self.head_0 = SPADEPlusLiteResnetBlock(16 * nf, 16 * nf, opt)
+
+        self.G_middle_0 = SPADEPlusLiteResnetBlock(16 * nf, 16 * nf, opt)
+        self.G_middle_1 = SPADEPlusLiteResnetBlock(16 * nf, 16 * nf, opt)
+
+        self.up_0 = SPADEPlusLiteResnetBlock(16 * nf, 8 * nf, opt)
+        self.up_1 = SPADEPlusLiteResnetBlock(8 * nf, 4 * nf, opt)
+        self.up_2 = SPADEPlusLiteResnetBlock(4 * nf, 2 * nf, opt)
+        self.up_3 = SPADEPlusLiteResnetBlock(2 * nf, 1 * nf, opt)
+
+        final_nc = nf
+
+        if opt.num_upsampling_layers == 'most':
+            self.up_4 = SPADEPlusLiteResnetBlock(1 * nf, nf // 2, opt)
             final_nc = nf // 2
 
         self.conv_img = nn.Conv2d(final_nc, opt.output_nc, 3, padding=1)
@@ -444,7 +538,7 @@ def define_G(input_nc, output_nc, ngf, norm='batch', use_dropout=False, init_typ
     if opt.load_checkpoint is not None:
         import os
         checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
-        netG_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.dataset, opt.netG, opt.load_checkpoint))
+        netG_path = os.path.join(checkpoint_dir, 'netG_{}_epoch_{}.pth'.format(opt.netG, opt.load_checkpoint))
         net = torch.load(netG_path).to(gpu_id)
         return net
 
@@ -459,6 +553,9 @@ def define_G(input_nc, output_nc, ngf, norm='batch', use_dropout=False, init_typ
         net = Pix2PixHDGenerator(opt)
     elif opt.netG == 'spadeplus':
         net = SPADEPlusGenerator(opt)
+        return net.to(gpu_id)
+    elif opt.netG == 'spadeplustlite':
+        net = SPADEPlusLiteGenerator(opt)
         return net.to(gpu_id)
    
     return init_net(net, init_type, init_gain, gpu_id)

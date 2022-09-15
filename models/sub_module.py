@@ -277,6 +277,118 @@ class SPADEPlusResnetBlock(nn.Module):
     def actvn(self, x):
         return F.leaky_relu(x, 2e-1)
 
+class SPADEPlusLite(nn.Module):
+    def __init__(self, config_text, norm_nc, label_nc):
+        super().__init__()
+
+        assert config_text.startswith('spade')
+        parsed = re.search('spade(\D+)(\d)x\d', config_text)
+        param_free_norm_type = str(parsed.group(1))
+        ks = int(parsed.group(2))
+
+        if param_free_norm_type == 'instance':
+            self.param_free_norm = nn.InstanceNorm2d(norm_nc, affine=False)
+        elif param_free_norm_type == 'syncbatch':
+            self.param_free_norm = SynchronizedBatchNorm2d(norm_nc, affine=False)
+        elif param_free_norm_type == 'batch':
+            self.param_free_norm = nn.BatchNorm2d(norm_nc, affine=False)
+        else:
+            raise ValueError('%s is not a recognized param-free norm type in SPADE'
+                             % param_free_norm_type)
+
+        # The dimension of the intermediate embedding space. Yes, hardcoded.
+        nhidden = 128
+
+        pw = ks // 2
+        self.mlp_shared = nn.Sequential(
+            nn.Conv2d(label_nc, nhidden, kernel_size=ks, padding=pw),
+            nn.LeakyReLU()
+        )
+
+        self.mlp_adain_gamma_beta = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1), # (N, nhidden, 1, 1)
+            nn.Conv2d(nhidden, 2*norm_nc, kernel_size=1, padding=0)
+        )
+
+        self.mlp_spade_gamma_beta = nn.Sequential(
+            nn.Conv2d(nhidden, 2*norm_nc, kernel_size=ks, padding=pw)
+        )
+
+
+
+    def forward(self, x, segmap):
+
+        # Part 1. generate parameter-free normalized activations
+        normalized = self.param_free_norm(x)
+
+        # Part 2. produce scaling and bias conditioned on semantic map
+        segmap = F.interpolate(segmap, size=x.size()[2:], mode='nearest')
+        actv = self.mlp_shared(segmap)
+
+        # Part 2.1 apply ADAIN, scale and shift global feature.
+        adain_gamma_beta = self.mlp_adain_gamma_beta(actv) # (N, 2C, 1, 1)
+        adain_gamma, adain_beta = torch.chunk(adain_gamma_beta, 2, dim=1) # (N, C, 1, 1) x 2
+        adain_normalized = F.leaky_relu(normalized * (1 + adain_gamma) + adain_beta)
+        
+        # Part 2.2 apply SPADE, scale and shift pixel-wise(spatial) feature
+        spade_gamma_beta = self.mlp_spade_gamma_beta(actv) # (N, 2C, H, W)
+        spade_gamma, spade_beta = torch.chunk(spade_gamma_beta, 2, dim=1) # (N, C, H, W) x2
+        spade_normalized = adain_normalized * (1 + spade_gamma) + spade_beta
+
+        # apply scale and bias
+        out = spade_normalized
+
+        return out
+
+class SPADEPlusLiteResnetBlock(nn.Module):
+    def __init__(self, fin, fout, opt):
+        super().__init__()
+        # Attributes
+        self.learned_shortcut = (fin != fout)   
+        fmiddle = min(fin, fout)
+
+        # create conv layers
+        self.conv_0 = nn.Conv2d(fin, fmiddle, kernel_size=3, padding=1)
+        self.conv_1 = nn.Conv2d(fmiddle, fout, kernel_size=3, padding=1)
+        if self.learned_shortcut:
+            self.conv_s = nn.Conv2d(fin, fout, kernel_size=1, bias=False)
+
+        # apply spectral norm if specified
+        if 'spectral' in opt.norm_G:
+            self.conv_0 = spectral_norm(self.conv_0)
+            self.conv_1 = spectral_norm(self.conv_1)
+            if self.learned_shortcut:
+                self.conv_s = spectral_norm(self.conv_s)
+
+        # define normalization layers
+        spade_config_str = opt.norm_G.replace('spectral', '')
+        self.norm_0 = SPADEPlusLite(spade_config_str, fin, opt.input_nc)
+        self.norm_1 = SPADEPlusLite(spade_config_str, fmiddle, opt.input_nc)
+        if self.learned_shortcut:
+            self.norm_s = SPADEPlusLite(spade_config_str, fin, opt.input_nc)
+
+    # note the resnet block with SPADE also takes in |seg|,
+    # the semantic segmentation map as input
+    def forward(self, x, seg):
+        x_s = self.shortcut(x, seg)
+
+        dx = self.conv_0(self.actvn(self.norm_0(x, seg)))
+        dx = self.conv_1(self.actvn(self.norm_1(dx, seg)))
+
+        out = x_s + dx
+
+        return out
+
+    def shortcut(self, x, seg):
+        if self.learned_shortcut:
+            x_s = self.conv_s(self.norm_s(x, seg))
+        else:
+            x_s = x
+        return x_s
+
+    def actvn(self, x):
+        return F.leaky_relu(x, 2e-1)
+
 class ResnetBlock(nn.Module):
     def __init__(self, dim, norm_layer, activation=nn.ReLU(False), kernel_size=3):
         super().__init__()
