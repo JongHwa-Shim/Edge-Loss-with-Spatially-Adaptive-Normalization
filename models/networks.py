@@ -554,7 +554,7 @@ def define_G(input_nc, output_nc, ngf, norm='batch', use_dropout=False, init_typ
     elif opt.netG == 'spadeplus':
         net = SPADEPlusGenerator(opt)
         return net.to(gpu_id)
-    elif opt.netG == 'spadeplustlite':
+    elif opt.netG == 'spadepluslite':
         net = SPADEPlusLiteGenerator(opt)
         return net.to(gpu_id)
    

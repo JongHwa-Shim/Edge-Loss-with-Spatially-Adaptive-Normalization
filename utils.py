@@ -70,6 +70,9 @@ def modify_commandline_options(opt):
         opt.resnet_kernel_size = 3
         opt.resnet_initial_kernel_size = 7
         opt.norm_G = 'spectralinstance'
+    elif opt.netG == 'spadepluslite':
+        opt.norm_G = 'spectralspadesyncbatch3x3'
+        opt.num_upsampling_layers = 'normal'
     
     if opt.netD == 'multiscale':
         opt.netD_subarch = 'n_layer'
