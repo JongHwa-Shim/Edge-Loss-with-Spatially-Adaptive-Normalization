@@ -19,7 +19,7 @@ parser.add_argument('--netG', type=str, default='spade', help='selects model to 
 parser.add_argument('--netD', type=str, default='multiscale', help='(n_layers|multiscale)')
 parser.add_argument('--no_edge_loss', action='store_true', help='if specified, edge loss will not apllied')
 parser.add_argument('--memo', type=str, default='', help='additional memo for checkpoint folder')
-opt = parser.parse_args('--dataset facades --cuda cpu --netG spadeplus --netD multiscale --nepochs 1 --no_edge_loss --memo one_more_try'.split())
+opt = parser.parse_args('--dataset celeba --cuda cpu --netG spadepluslite --netD multiscale --nepochs 25 --no_edge_loss'.split())
 print(opt)
 
 device = torch.device(opt.cuda)

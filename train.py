@@ -26,8 +26,8 @@ parser.add_argument('--ndf', type=int, default=64, help='discriminator filters i
 parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count')
 parser.add_argument('--niter', type=int, default=500, help='# of iter at starting learning rate')
 parser.add_argument('--niter_decay', type=int, default=500, help='# of iter to linearly decay learning rate to zero')
-parser.add_argument('--lr_G', type=float, default=0.0002, help='initial learning rate for adam, pix2pix=0.0002, spade=0.0001')
-parser.add_argument('--lr_D', type=float, default=0.0002, help='initial learning rate for adam, pix2pix=0.0002, spade=0.0004')
+parser.add_argument('--lr_G', type=float, default=0.0001, help='initial learning rate for adam, pix2pix=0.0002, spade=0.0001')
+parser.add_argument('--lr_D', type=float, default=0.0004, help='initial learning rate for adam, pix2pix=0.0002, spade=0.0004')
 parser.add_argument('--lr_policy', type=str, default='lambda', help='learning rate policy: lambda|step|plateau|cosine')
 parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 parser.add_argument('--beta1', type=float, default=0.0, help='beta1 for adam. default=0.0 for spade, default=0.5 for pix2pix')
@@ -59,7 +59,7 @@ parser.add_argument('--memo', type=str, default='', help='additional memo for ch
 parser.add_argument('--lower_threshold', type=float, default=10.0, help='lower bound threshold of edge detection')
 parser.add_argument('--upper_threshold', type=float, default=50.0, help='upper bound threshold of edge detection')
 parser.add_argument('--save_step', type=int, default=5, help='save step')
-opt = parser.parse_args('--dataset facades --cuda cuda:0 --netG spadeplus --netD multiscale --no_instance --no_edge_loss --memo edge=10 --save_step 5'.split())
+opt = parser.parse_args('--dataset celeba --cuda cuda:0 --netG spadepluslite --netD multiscale --no_instance --no_edge_loss --save_step 5 --input_nc 18 --label_nc 18'.split())
 opt = modify_commandline_options(opt)
 print(opt)
 
@@ -186,7 +186,7 @@ for epoch in range(opt.epoch_count, opt.epoch_count + opt.niter + opt.niter_deca
     print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
 
     #checkpoint
-    if epoch % 1 == 0:
+    if epoch % opt.save_step == 0:
         if not os.path.exists("checkpoint"):
             os.mkdir("checkpoint")
         checkpoint_dir = os.path.join("checkpoint", opt.dataset, 'netG={}, netD={}, edgeloss={}{}'.format(opt.netG, opt.netD, str(not(opt.no_edge_loss)), opt.memo))
